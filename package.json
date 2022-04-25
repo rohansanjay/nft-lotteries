@@ -1,11 +1,11 @@
 {
-    "name": "ft",
-    "description": "Foundry template",
+    "name": "nft-lotteries",
+    "description": "NFT Lotteries",
     "author": "Rohan Sanjay",
     "version": "1.0.0",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/rohansanjay/ft.git"
+        "url": "git+https://github.com/rohansanjay/nft-lotteries.git"
     },
     "files": [
       "src/**/*.sol"

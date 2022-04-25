@@ -1,4 +1,4 @@
-# ft • [![tests](https://github.com/rohansanjay/ft/actions/workflows/tests.yml/badge.svg)](https://github.com/rohansanjay/ft/actions/workflows/tests.yml)
+# nft-lotteries • [![tests](https://github.com/rohansanjay/nft-lotteries/actions/workflows/tests.yml/badge.svg)](https://github.com/rohansanjay/nft-lotteries/actions/workflows/tests.yml)
 
 Foundry template forked from the goated [abigger87 femplate](https://github.com/abigger87/femplate) with some customizations.
 
@@ -7,7 +7,7 @@ Foundry template forked from the goated [abigger87 femplate](https://github.com/
 ```sh
 mkdir project-name
 cd project-name
-forge init --template https://github.com/rohansanjay/ft
+forge init --template https://github.com/rohansanjay/nft-lotteries
 git submodule update --init --recursive
 make rename
 yarn
@@ -43,7 +43,7 @@ make test
 
 ## License
 
-[AGPL-3.0-only](https://github.com/rohansanjay/ft/blob/master/LICENSE)
+[AGPL-3.0-only](https://github.com/rohansanjay/nft-lotteries/blob/master/LICENSE)
 
 
 ## Acknowledgements

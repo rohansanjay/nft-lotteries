@@ -41,7 +41,10 @@ contract NFTLottery {
                                  EVENTS
     //////////////////////////////////////////////////////////////*/ 
 
-    event NewLotteryListed(Lottery lottery);
+    event NewLotteryListed(uint256 indexed lotteryId, Lottery lottery);
+    event LotteryCancelled(uint256 indexed lotteryId, Lottery Lottery);
+    event LotteryWon(uint256 indexed lotteryId, address user, Lottery lottery);
+    event LotteryLost(uint256 indexed lotteryId, address user, Lottery lottery);
 
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
@@ -50,24 +53,23 @@ contract NFTLottery {
     error Unauthorized();
     error BetAmountZero();
     error InvalidWinProbability();
+    error InsufficientFunds();
 
     /*//////////////////////////////////////////////////////////////
                              EXTERNAL LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice List an NFT Lottery
+    /// @notice Deposit NFT into contract and list lottery
     /// @param _nftCollection The contract address of the NFT collection
     /// @param _tokenId The id of the NFT within the collection
     /// @param _betAmount The required wager to win the NFT 
     /// @param _winProbability The probability of winning the NFT (6-decimal places)
-    /// @return The ID of the created listing
-    function listNFTLottery(
+    function listLottery(
         address _nftCollection,
         uint256 _tokenId,
         uint256 _betAmount,
         uint256 _winProbability
-    ) external payable returns (uint256) {
-
+    ) external payable {
         // The lister must own the NFT
         if (ERC721(_nftCollection).ownerOf(_tokenId) != msg.sender) revert Unauthorized();
 
@@ -87,11 +89,65 @@ contract NFTLottery {
 
         openLotteries[nextLotteryId] = lottery;
 
-        emit NewLotteryListed(lottery);
+        emit NewLotteryListed(nextLotteryId++, lottery);
 
         lottery.nftCollection.safeTransferFrom(msg.sender, address(this), lottery.tokenId);
+    }
 
-        return nextLotteryId++;
+    /// @notice Cancel lottery and send NFT back to original owner
+    /// @param _lotteryId The ID of the lottery to cancel
+    function cancelLottery(uint256 _lotteryId) external payable {
+        Lottery memory lottery = openLotteries[_lotteryId];
+
+        // Only the original owner can withdraw
+        if (lottery.nftOwner != msg.sender) revert Unauthorized(); 
+
+        delete openLotteries[_lotteryId];
+
+        emit LotteryCancelled(_lotteryId, lottery);
+
+        lottery.nftCollection.safeTransferFrom(address(this), msg.sender, lottery.tokenId);
+    }
+
+    function placeBet(uint256 _lotteryId) external payable {
+        Lottery memory lottery = openLotteries[_lotteryId];
+
+        // Ensure funds sent cover betAmount specified by NFT owner
+        if (msg.value < lottery.betAmount) revert InsufficientFunds(); 
+
+        // Refund any extra ETH to sender
+        if (msg.value > lottery.betAmount) {
+            payable(msg.sender).transfer(msg.value - lottery.betAmount);
+        }
+
+        // Send bet amount to nft owner
+        payable(lottery.nftOwner).transfer(lottery.betAmount);
+
+        _settleBet(msg.sender, _lotteryId, lottery); 
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                             INTERNAL LOGIC
+    //////////////////////////////////////////////////////////////*/ 
+
+    function _settleBet(address _user, uint _lotteryId, Lottery memory _lottery) internal {
+        uint256 _rng = _generateRandomNumber();
+
+        // If random number is ≤ win probability, sender wins the lottery
+        if (_rng <= _lottery.winProbability) {
+            delete openLotteries[_lotteryId];
+            
+            emit LotteryWon(_lotteryId, _user, _lottery);
+
+            _lottery.nftCollection.safeTransferFrom(address(this), _user, _lottery.tokenId); 
+        } else {
+            emit LotteryLost(_lotteryId, _user, _lottery);
+        }
+    }
+
+    function _generateRandomNumber() internal pure returns (uint256) {
+        // TODO: chainlink vrf
+        return 1;
     }
 
     /*//////////////////////////////////////////////////////////////

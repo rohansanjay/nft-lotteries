@@ -1,32 +1,8 @@
 # nft-lotteries • [![tests](https://github.com/rohansanjay/nft-lotteries/actions/workflows/tests.yml/badge.svg)](https://github.com/rohansanjay/nft-lotteries/actions/workflows/tests.yml)
 
-Foundry template forked from the goated [abigger87 femplate](https://github.com/abigger87/femplate) with some customizations.
-
-## Getting Started
-
-```sh
-mkdir project-name
-cd project-name
-forge init --template https://github.com/rohansanjay/nft-lotteries
-git submodule update --init --recursive
-make rename
-yarn
-```
-
+## Introduction
 
 ## Blueprint
-
-```ml
-lib
-├─ ds-test — https://github.com/dapphub/ds-test
-├─ forge-std — https://github.com/brockelmore/forge-std
-├─ solmate — https://github.com/Rari-Capital/solmate
-src
-├─ tests
-│  └─ Greeter.t — "Greeter Tests"
-└─ Greeter — "A Minimal Greeter Contract"
-```
-
 
 ## Development
 
@@ -39,24 +15,11 @@ make build
 ```bash
 make test
 ```
-
-
 ## License
 
 [AGPL-3.0-only](https://github.com/rohansanjay/nft-lotteries/blob/master/LICENSE)
 
-
 ## Acknowledgements
-
-- [femplate](https://github.com/abigger87/femplate)
-- [foundry](https://github.com/gakonst/foundry)
-- [solmate](https://github.com/Rari-Capital/solmate)
-- [forge-std](https://github.com/brockelmore/forge-std)
-- [clones-with-immutable-args](https://github.com/wighawag/clones-with-immutable-args).
-- [foundry-toolchain](https://github.com/onbjerg/foundry-toolchain) by [onbjerg](https://github.com/onbjerg).
-- [forge-template](https://github.com/FrankieIsLost/forge-template) by [FrankieIsLost](https://github.com/FrankieIsLost).
-- [Georgios Konstantopoulos](https://github.com/gakonst) for [forge-template](https://github.com/gakonst/forge-template) resource.
-
 
 ## Disclaimer
 

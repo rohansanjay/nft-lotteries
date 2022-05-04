@@ -28,6 +28,10 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 - Tests
 - Foundry reroutes
 - Frontend design and implementation
+- Security considerations (re-entrancy, etc.)
+- Rake 
+- Upgradable?
+- add bet state?
 - README updates
 
 ## Development

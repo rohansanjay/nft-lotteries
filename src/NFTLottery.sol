@@ -26,6 +26,7 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
     error BetAmountZero();
     error InvalidWinProbability();
     error InsufficientFunds();
+    error BetIsPending();
 
     /*//////////////////////////////////////////////////////////////
                                 CONSTANTS
@@ -35,7 +36,7 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
     uint256 internal constant PROBABILITY_MULTIPLIER = 10**6;
 
     /*//////////////////////////////////////////////////////////////
-                            NFT LOTTERY STATE
+                                 STRUCTS
     //////////////////////////////////////////////////////////////*/
 
     /// @dev Parameters for Lotteries
@@ -44,13 +45,19 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
     /// @param tokenId The Id of the NFT within the collection
     /// @param betAmount The required wager to win the NFT 
     /// @param winProbability The probability of winning the NFT (6-decimal places)
+    /// @param betIsPending Store if a bet on the Lottery is pending
     struct Lottery {
         address nftOwner;
         ERC721 nftCollection;
         uint256 tokenId;
         uint256 betAmount;
         uint256 winProbability;
+        bool betIsPending;
     }
+
+    /*//////////////////////////////////////////////////////////////
+                            NFT LOTTERY STATE
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice A list of all NFT Lotteries indexed by lottery Id
     mapping (uint256 => Lottery) public openLotteries;
@@ -132,7 +139,8 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
             nftCollection: ERC721(_nftCollection),
             tokenId: _tokenId,
             betAmount: _betAmount,
-            winProbability: _winProbability
+            winProbability: _winProbability,
+            betIsPending: false
         });
 
         openLotteries[nextLotteryId] = lottery;
@@ -150,6 +158,9 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
         // Only the original owner can withdraw
         if (lottery.nftOwner != msg.sender) revert Unauthorized(); 
 
+        // Cannot cancel a Lottery if there is a pending bet
+        if (lottery.betIsPending) revert BetIsPending();
+
         delete openLotteries[_lotteryId];
 
         emit LotteryCancelled(_lotteryId, lottery);
@@ -162,6 +173,9 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
     function placeBet(uint256 _lotteryId) external payable {
         Lottery memory lottery = openLotteries[_lotteryId];
 
+        // Cannot place a bet if there is already one pending
+        if (lottery.betIsPending) revert BetIsPending();
+
         // Ensure funds sent cover betAmount specified by NFT owner
         if (msg.value < lottery.betAmount) revert InsufficientFunds(); 
 
@@ -170,6 +184,9 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
             payable(msg.sender).transfer(msg.value - lottery.betAmount);
         }
 
+        // Change betIsPending to true
+        _flipBetIsPendingStatus(_lotteryId, lottery.betIsPending);
+
         // Send bet amount to nft owner
         payable(lottery.nftOwner).transfer(lottery.betAmount);
 
@@ -177,7 +194,6 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
         uint256 requestId = requestRandomWords();
 
         // Map requestId to lottery and user address to reference when random number is received from VRF
-        // TODO: reentrancy?
         vrfRequestIdToLotteryId[requestId] = _lotteryId;
         vrfRequestIdToAddress[requestId] = msg.sender;
     }
@@ -203,7 +219,17 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
             lottery.nftCollection.safeTransferFrom(address(this), user, lottery.tokenId); 
         } else {
             emit LotteryLost(lotteryId, user, lottery);
+
+            // Change bet status from pending
+            _flipBetIsPendingStatus(lotteryId, lottery.betIsPending);
         }
+    }
+
+    /// @notice Flips pending bet status
+    /// @param _lotteryId The Id of the Lottery to change pending status for
+    /// @param _status The current betIsPending value for the Lottery
+    function _flipBetIsPendingStatus(uint256 _lotteryId, bool _status) internal {
+        _status ? openLotteries[_lotteryId].betIsPending = false : openLotteries[_lotteryId].betIsPending = true;
     }
 
     /*//////////////////////////////////////////////////////////////

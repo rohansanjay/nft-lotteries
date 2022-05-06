@@ -7,6 +7,9 @@ import { VRFConsumerBaseV2 } from "chainlink/v0.8/VRFConsumerBaseV2.sol";
 import { VRFCoordinatorV2Interface } from "chainlink/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import { Ownable } from "oz/access/Ownable.sol";
 
+/// @title NFT Lotteries
+/// @author Rohan Sanjay (https://github.com/rohansanjay/nft-lotteries)
+/// @notice An NFT Betting Platform
 contract NFTLottery is VRFConsumerBaseV2, Ownable {
 
     /*//////////////////////////////////////////////////////////////

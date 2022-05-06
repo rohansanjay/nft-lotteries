@@ -24,12 +24,11 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 ```
 
 ## To-do
-- VRF setters
-- Tests
-- Foundry reroutes
-- Frontend design and implementation
 - Rake 
+- Foundry reroutes
+- Tests
 - Upgradable?
+- Frontend design and implementation
 - README updates
 
 ## Development

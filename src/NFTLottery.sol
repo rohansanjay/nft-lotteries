@@ -81,23 +81,23 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
     /// @notice VRF coordinator contract
     VRFCoordinatorV2Interface internal COORDINATOR;
 
-    /// @notice VRF subscription Id used for funding requests
-    uint64 internal subscriptionId;
-
     /// @notice VRF address of coordinator see https://docs.chain.link/docs/vrf-contracts/#configurations
     address internal vrfCoordinator;
 
     /// @notice VRF gas lane see https://docs.chain.link/docs/vrf-contracts/#configurations
-    bytes32 internal keyHash;
+    bytes32 public keyHash;
 
-    /// @notice VRF number of confirmations node waits before responding
-    uint16 internal requestConfirmations = 20;
+    /// @notice VRF subscription Id used for funding requests
+    uint64 public subscriptionId;
 
     /// @notice VRF callback request gas limit
-    uint32 internal callbackGasLimit = 100000;
+    uint32 public callbackGasLimit = 100000;
 
     /// @notice VRF number of random values in one request
     uint32 internal numWords =  1;
+
+    /// @notice VRF number of confirmations node waits before responding
+    uint16 public requestConfirmations = 20;
 
     /// @notice VRF maps request Id corresponding Bet
     mapping(uint256 => Bet) public vrfRequestIdToBet;
@@ -279,6 +279,30 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
 
         // settle bet once VRF random number is returned
         _settleBet(requestId, _randomNumber);
+    }
+
+    /// @notice Sets VRF key hash
+    /// @param _keyHash the new key hash
+    function setKeyHash(bytes32 _keyHash) external onlyOwner {
+        keyHash = _keyHash;
+    }
+
+    /// @notice Sets VRF subscription Id
+    /// @param _subscriptionId the new subscription Id
+    function setSubscriptionId(uint64 _subscriptionId) external onlyOwner {
+        subscriptionId = _subscriptionId;
+    }
+
+    /// @notice Sets VRF callback gas limit
+    /// @param _callbackGasLimit the new callback gas limit
+    function setCallbackGasLimit(uint32 _callbackGasLimit) external onlyOwner {
+        callbackGasLimit = _callbackGasLimit;
+    }
+
+    /// @notice Sets VRF number of confirmations
+    /// @param _requestConfirmations the new number of request confirmations
+    function setRequestConfirmations(uint16 _requestConfirmations) external onlyOwner {
+        requestConfirmations = _requestConfirmations;
     }
 
     /*//////////////////////////////////////////////////////////////

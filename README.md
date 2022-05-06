@@ -24,7 +24,6 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 ```
 
 ## To-do
-- Rake 
 - Foundry reroutes
 - Tests
 - Upgradable?

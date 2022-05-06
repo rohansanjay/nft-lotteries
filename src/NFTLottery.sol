@@ -20,6 +20,7 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
     event LotteryCancelled(uint256 indexed lotteryId, Lottery lottery);
     event NewBet(Bet bet);
     event BetSettled(bool indexed won, Bet bet, Lottery lottery);
+    event RakeSet(uint256 oldRake, uint256 newRake);
     
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
@@ -27,17 +28,18 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
 
     error Unauthorized();
     error BetAmountZero();
-    error InvalidWinProbability();
+    error InvalidPercent();
     error InsufficientFunds();
     error BetIsPending();
     error WrongLotteryId();
+    error InvalidAddress();
 
     /*//////////////////////////////////////////////////////////////
                                 CONSTANTS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Fees are 6-decimal places. Ex: 10 * 10**6 = 10%
-    uint256 internal constant PROBABILITY_MULTIPLIER = 10**6;
+    /// @notice Percents are 6-decimal places. Ex: 10 * 10**6 = 10%
+    uint256 internal constant PERCENT_MULTIPLIER = 10**6;
 
     /*//////////////////////////////////////////////////////////////
                                  STRUCTS
@@ -77,6 +79,12 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
     /// @notice The Id used for the next Lottery
     uint256 public nextLotteryId = 1;
 
+    /// @notice Rake fee (6 decimals). ex: 10 * 10 ** 6 = 10%
+    uint256 public rake;
+
+    /// @notice Recipient of rake fee
+    address public rakeRecipient;
+
     /*//////////////////////////////////////////////////////////////
                                 VRF STATE
     //////////////////////////////////////////////////////////////*/
@@ -113,10 +121,24 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
     /// @param _subscriptionId The subscription Id the contract will use for funding requests
     /// @param _vrfCoordinator The address of the Chainlink VRF contract
     /// @param _keyHash The gas lane key hash value for VRF job
-    constructor(uint64 _subscriptionId, address _vrfCoordinator, bytes32 _keyHash) VRFConsumerBaseV2(_vrfCoordinator) {
+    /// @param _rake The rake fee
+    /// @param _rakeRecipient The address that will receive the rake fee
+    constructor(
+        uint64 _subscriptionId, 
+        address _vrfCoordinator, 
+        bytes32 _keyHash,
+        uint256 _rake,
+        address _rakeRecipient
+    ) VRFConsumerBaseV2(_vrfCoordinator) {
+        if (_vrfCoordinator == address(0)) revert InvalidAddress();
+        if (_rake > 100 * PERCENT_MULTIPLIER) revert InvalidPercent();
+        if (_rakeRecipient == address(0)) revert InvalidAddress();
+
         COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
         keyHash = _keyHash;
         subscriptionId = _subscriptionId;
+        rake = _rake;
+        rakeRecipient = _rakeRecipient;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -141,7 +163,7 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
         if (_betAmount == 0) revert BetAmountZero();
 
         // The probability of winning must be > 0 and < 100 (because we include 0)
-        if (_winProbability == 0 || _winProbability > 100 * PROBABILITY_MULTIPLIER) revert InvalidWinProbability();
+        if (_winProbability == 0 || _winProbability > 100 * PERCENT_MULTIPLIER) revert InvalidPercent();
 
         Lottery memory lottery = Lottery({
             nftOwner: msg.sender,
@@ -199,8 +221,12 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
         // Change betIsPending to true
         _flipBetIsPendingStatus(_lotteryId, lottery.betIsPending);
 
-        // Send bet amount to nft owner
-        payable(lottery.nftOwner).transfer(lottery.betAmount);
+        // Send rake to rake recipient
+        uint256 rakeAmount = (lottery.betAmount * rake) / (100 * PERCENT_MULTIPLIER);
+        payable(rakeRecipient).transfer(rakeAmount);
+
+        // Send bet amount to nft owner after deducting rake
+        payable(lottery.nftOwner).transfer(lottery.betAmount - rakeAmount);
 
         // Random number generation
         uint256 requestId = requestRandomWords();
@@ -278,11 +304,15 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
     ) internal override {
         // convert number into range 0 to 100 * 10^6
         // TODO: confirm this!
-        uint256 _randomNumber = randomWords[0] % (100 * PROBABILITY_MULTIPLIER + 1);
+        uint256 _randomNumber = randomWords[0] % (100 * PERCENT_MULTIPLIER + 1);
 
         // settle bet once VRF random number is returned
         _settleBet(requestId, _randomNumber);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                 SETTERS
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice Sets VRF key hash
     /// @param _keyHash the new key hash
@@ -306,6 +336,24 @@ contract NFTLottery is VRFConsumerBaseV2, Ownable {
     /// @param _requestConfirmations the new number of request confirmations
     function setRequestConfirmations(uint16 _requestConfirmations) external onlyOwner {
         requestConfirmations = _requestConfirmations;
+    }
+
+    /// @notice Sets the rake fee
+    /// @param _rake New rake fee (6 decimals ex: 10 * 10 ** 6 = 10%)
+    function setRake(uint256 _rake) external onlyOwner {
+        if (rake > 100 * PERCENT_MULTIPLIER) revert InvalidPercent();
+
+        emit RakeSet(rake, _rake);
+
+        rake = _rake;
+    }
+
+    /// @notice Sets the rake fee recipient
+    /// @param _rakeRecipient Address of new rake fee recipient
+    function setRakeRecipient(address _rakeRecipient) external onlyOwner {
+        if (_rakeRecipient == address(0) || _rakeRecipient == rakeRecipient) revert InvalidAddress();
+
+        rakeRecipient = _rakeRecipient;
     }
 
     /*//////////////////////////////////////////////////////////////

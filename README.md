@@ -13,22 +13,34 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 
 ## Blueprint
 ```bash
+.
 ├── lib
-│   ├── ds-test
+│   ├── chainlink
 │   ├── forge-std
+│   ├── openzeppelin-contracts
 │   └── solmate
+├── scripts
 └── src
-    ├── NFTLottery.sol
+    ├── NFTLotteries.sol
     └── test
-        ├── NFTLottery.t.sol
+        └── NFTLotteries.t.sol
 ```
 
 ## To-do
-- Tests
+**Contracts (Rohan)**
+- Add functionality to change bet amount and win probability
+- Finish tests
 - Upgradable?
-- Frontend design and implementation
-- README updates
-- NFT transfer approval?
+- Finish README 
+
+**Gas Snapshot (Rohan)**
+- Store active lottery Ids
+- Store mapping of nft collection to lotteryId
+
+**Frontend**
+- Simple fe for testnet (Roland)
+- EV calculator (Roland)
+- Mainnet design (Enzo)
 
 ## Development
 

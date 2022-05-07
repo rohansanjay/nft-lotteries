@@ -9,8 +9,8 @@ import { Ownable } from "oz/access/Ownable.sol";
 
 /// @title NFT Lotteries
 /// @author Rohan Sanjay (https://github.com/rohansanjay/nft-lotteries)
-/// @notice An NFT Betting Platform
-contract NFTLottery is VRFConsumerBaseV2, Ownable {
+/// @notice An NFT Betting Protocol
+contract NFTLotteries is VRFConsumerBaseV2, Ownable {
 
     /*//////////////////////////////////////////////////////////////
                                  EVENTS

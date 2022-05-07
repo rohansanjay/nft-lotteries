@@ -4,6 +4,7 @@ pragma solidity 0.8.12;
 import { NFTLotteries } from "../NFTLotteries.sol";
 import { MockERC721 } from "solmate/test/utils/mocks/MockERC721.sol";
 import { VRFCoordinatorV2Mock } from "chainlink/v0.8/mocks/VRFCoordinatorV2Mock.sol";
+import { ERC721 } from "solmate/tokens/ERC721.sol";
 import "forge-std/Test.sol";
 
 contract NFTLotteryTest is Test {
@@ -69,9 +70,7 @@ contract NFTLotteryTest is Test {
                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Test NFTLotteries Constructor
-    function testConstructor() public {
-        // Exepct Revert with invalid coordinator address
+    function testInvalidVrfCoordinatorCannotConstruct() public {
         vm.expectRevert(abi.encodePacked(bytes4(keccak256("InvalidAddress()"))));
         nftLotteries = new NFTLotteries(
             subscriptionId,
@@ -80,8 +79,9 @@ contract NFTLotteryTest is Test {
             rake,
             rakeRecipient
         );
+    }
 
-        // Exepct Revert with invalid rake amount (over 100%)
+    function testRakeOverHundredCannotConstruct() public {
         vm.expectRevert(abi.encodePacked(bytes4(keccak256("InvalidPercent()"))));
         nftLotteries = new NFTLotteries(
             subscriptionId,
@@ -90,8 +90,9 @@ contract NFTLotteryTest is Test {
             100000001,
             rakeRecipient
         );
+    }
 
-        // Exepct Revert with invalid rake recipient
+    function testInvalidRakeRecipientCannotConstruct() public {
         vm.expectRevert(abi.encodePacked(bytes4(keccak256("InvalidAddress()"))));
         nftLotteries = new NFTLotteries(
             subscriptionId,
@@ -103,36 +104,68 @@ contract NFTLotteryTest is Test {
     }
     
     /*//////////////////////////////////////////////////////////////
-                                  LOGIC
+                              LIST LOTTERY
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Tests listing a new lottery
-    function testListLottery() public {
+    function testNonOwnerCannotListLottery() public {
         assertEq(mockNFT.ownerOf(tokenId), nftOwner);
 
-        // Expect Revert when we don't deposit from owner address
         hoax(address(1));
         vm.expectRevert(abi.encodePacked(bytes4(keccak256("Unauthorized()"))));
         nftLotteries.listLottery(address(mockNFT), tokenId, 1 ether, 1 * PERCENT_MULTIPLIER);
 
-        // Set msg.sender to correct nft owner
-        startHoax(nftOwner);
+        assertEq(mockNFT.ownerOf(tokenId), nftOwner);
+    }
 
-        // Expect Revert when bet amount is 0
+    function testZeroBetAmountCannotListLottery() public {
+        assertEq(mockNFT.ownerOf(tokenId), nftOwner);
+
+        hoax(nftOwner);
+
         vm.expectRevert(abi.encodePacked(bytes4(keccak256("BetAmountZero()"))));
         nftLotteries.listLottery(address(mockNFT), tokenId, 0, 1 * PERCENT_MULTIPLIER);
 
-        // Expect Revert when probability of winning is 0 or greater than 100
+        assertEq(mockNFT.ownerOf(tokenId), nftOwner);
+    }
+
+    function testZeroWinProbabilityCannotListLottery() public {
+        assertEq(mockNFT.ownerOf(tokenId), nftOwner);
+
+        startHoax(nftOwner);
+
         vm.expectRevert(abi.encodePacked(bytes4(keccak256("InvalidPercent()"))));
         nftLotteries.listLottery(address(mockNFT), tokenId, 1 ether, 0 * PERCENT_MULTIPLIER);
+
+        assertEq(mockNFT.ownerOf(tokenId), nftOwner);
+    }
+
+    function testAboveHundredWinProbabilityCannotListLottery() public {
+        assertEq(mockNFT.ownerOf(tokenId), nftOwner);
+
+        hoax(nftOwner);
+
         vm.expectRevert(abi.encodePacked(bytes4(keccak256("InvalidPercent()"))));
         nftLotteries.listLottery(address(mockNFT), tokenId, 1 ether, 101 * PERCENT_MULTIPLIER);
 
-        // The lottery can't be listed if the nft owner doesn't approve it
+        assertEq(mockNFT.ownerOf(tokenId), nftOwner);
+    }
+
+    function testNftTransferNotApprovedCannotListLottery() public {
+        assertEq(mockNFT.ownerOf(tokenId), nftOwner);
+
+        hoax(nftOwner);
+
         vm.expectRevert("NOT_AUTHORIZED");
         nftLotteries.listLottery(address(mockNFT), tokenId, betAmount, winProbability);
 
-        // Nft owner correctly lists the lottery
+        assertEq(mockNFT.ownerOf(tokenId), nftOwner);
+    }
+
+    function testCanListLottery() public {
+        assertEq(mockNFT.ownerOf(tokenId), nftOwner);
+
+        startHoax(nftOwner);
+
         mockNFT.approve(address(nftLotteries), tokenId);
 
         uint256 lotteryId = nftLotteries.nextLotteryId();
@@ -153,5 +186,21 @@ contract NFTLotteryTest is Test {
 
         assertEq(mockNFT.ownerOf(tokenId), address(nftLotteries));
         assertEq(nftLotteries.nextLotteryId(), lotteryId + 1);
+
+        (
+            address _nftOwner, 
+            ERC721 _nftCollection, 
+            uint256 _tokenId, 
+            uint256 _betAmount, 
+            uint256 _winProbability, 
+            bool _betIsPending
+        ) = nftLotteries.openLotteries(lotteryId);
+
+        assertEq(nftOwner, _nftOwner);
+        assertEq(address(mockNFT), address(_nftCollection));
+        assertEq(tokenId, _tokenId);
+        assertEq(betAmount, _betAmount);
+        assertEq(winProbability, _winProbability);
+        assertEq(false, _betIsPending);
     }
 }

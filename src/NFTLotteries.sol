@@ -16,7 +16,7 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
                                  EVENTS
     //////////////////////////////////////////////////////////////*/ 
 
-    event NewLotteryListed(uint256 indexed lotteryId, Lottery lottery);
+    event NewLotteryListed(Lottery lottery);
     event LotteryCancelled(uint256 indexed lotteryId, Lottery lottery);
     event NewBet(Bet bet);
     event BetSettled(bool indexed won, Bet bet, Lottery lottery);
@@ -92,9 +92,6 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
     /// @notice VRF coordinator contract
     VRFCoordinatorV2Interface internal COORDINATOR;
 
-    /// @notice VRF address of coordinator see https://docs.chain.link/docs/vrf-contracts/#configurations
-    address internal vrfCoordinator;
-
     /// @notice VRF gas lane see https://docs.chain.link/docs/vrf-contracts/#configurations
     bytes32 public keyHash;
 
@@ -134,7 +131,7 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
         if (_rake > 100 * PERCENT_MULTIPLIER) revert InvalidPercent();
         if (_rakeRecipient == address(0)) revert InvalidAddress();
 
-        COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
+        COORDINATOR = VRFCoordinatorV2Interface(_vrfCoordinator);
         keyHash = _keyHash;
         subscriptionId = _subscriptionId;
         rake = _rake;
@@ -150,12 +147,13 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
     /// @param _tokenId The id of the NFT within the collection
     /// @param _betAmount The required wager to win the NFT 
     /// @param _winProbability The probability of winning the NFT (6-decimal places)
+    /// @return The id of the listed lottery
     function listLottery(
         address _nftCollection,
         uint256 _tokenId,
         uint256 _betAmount,
         uint256 _winProbability
-    ) external payable {
+    ) external payable returns (uint256) {
         // The lister must own the NFT
         if (ERC721(_nftCollection).ownerOf(_tokenId) != msg.sender) revert Unauthorized();
 
@@ -176,9 +174,11 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
 
         openLotteries[nextLotteryId] = lottery;
 
-        emit NewLotteryListed(nextLotteryId++, lottery);
+        emit NewLotteryListed(lottery);
 
         lottery.nftCollection.safeTransferFrom(msg.sender, address(this), lottery.tokenId);
+
+        return nextLotteryId++;
     }
 
     /// @notice Cancel lottery and send NFT back to original owner
@@ -282,7 +282,7 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
 
     /// @notice Requests random number from Chainlink VRF 
     /// @return The Id of the VRF request
-    function requestRandomWords() internal onlyOwner returns (uint256) {
+    function requestRandomWords() internal returns (uint256) {
         uint256 requestId = COORDINATOR.requestRandomWords(
             keyHash,
             subscriptionId,

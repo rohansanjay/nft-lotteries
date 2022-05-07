@@ -245,4 +245,33 @@ contract NFTLotteryTest is Test {
         vm.expectRevert(abi.encodePacked(bytes4(keccak256("BetIsPending()"))));
         nftLotteries.cancelLottery(lotteryId);
     }
+
+    function testCanCancelLottery() public {
+        startHoax(nftOwner);
+        mockNFT.approve(address(nftLotteries), tokenId);
+
+        uint256 lotteryId = nftLotteries.listLottery(address(mockNFT), tokenId, betAmount, winProbability);
+        (address _nftOwner, , , , , bool _betIsPending) = nftLotteries.openLotteries(lotteryId);
+
+        // Is owner and no pending bet
+        assertEq(nftOwner, _nftOwner);
+        assertEq(false, _betIsPending);
+
+        vm.expectEmit(true, false, false, true);
+        emit LotteryCancelled(
+            lotteryId,
+            NFTLotteries.Lottery({
+                nftOwner: nftOwner,
+                nftCollection: mockNFT,
+                tokenId: tokenId,
+                betAmount: betAmount,
+                winProbability: winProbability,
+                betIsPending: false
+            }) 
+        );
+
+        assertEq(mockNFT.ownerOf(tokenId), address(nftLotteries));
+        nftLotteries.cancelLottery(lotteryId);
+        assertEq(mockNFT.ownerOf(tokenId), nftOwner);
+    }
 }

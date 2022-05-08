@@ -356,6 +356,44 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
         rakeRecipient = _rakeRecipient;
     }
 
+    /// @notice Sets a new bet amount for a lottery
+    /// @param _betAmount New bet amount
+    function setBetAmount(uint256 _lotteryId, uint256 _betAmount) external {
+        Lottery memory lottery = openLotteries[_lotteryId];
+
+        // Cannot change bet amount if there is already a bet pending
+        if (lottery.betIsPending) revert BetIsPending();
+
+        // Only the original owner can change the bet amount
+        if (lottery.nftOwner != msg.sender) revert Unauthorized(); 
+
+        // The specified bet amount to win the NFT must be greater than 0
+        if (_betAmount == 0) revert BetAmountZero();
+
+        lottery.betAmount = _betAmount;
+
+        openLotteries[_lotteryId] = lottery;
+    }
+
+    /// @notice Sets a new win probability a lottery
+    /// @param _winProbability New win probability
+    function setWinProbability(uint256 _lotteryId, uint256 _winProbability) external {
+        Lottery memory lottery = openLotteries[_lotteryId];
+
+        // Cannot change win probability if there is already a bet pending
+        if (lottery.betIsPending) revert BetIsPending();
+
+        // Only the original owner can change the bet amount
+        if (lottery.nftOwner != msg.sender) revert Unauthorized(); 
+
+        // The probability of winning must be > 0 and < 100 (because we include 0)
+        if (_winProbability == 0 || _winProbability > 100 * PERCENT_MULTIPLIER) revert InvalidPercent();
+
+        lottery.winProbability = _winProbability;
+
+        openLotteries[_lotteryId] = lottery;
+    }
+
     /*//////////////////////////////////////////////////////////////
                          ERC-721 RECEIVER LOGIC
     //////////////////////////////////////////////////////////////*/

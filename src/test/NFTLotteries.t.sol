@@ -203,13 +203,13 @@ contract NFTLotteryTest is Test {
                              CANCEL LOTTERY
     //////////////////////////////////////////////////////////////*/
 
-    function testInvalidIdCannotCancelLottery(uint256 _lotteryId) public {
+    function testFuzzInvalidIdCannotCancelLottery(uint256 _fuzzLotteryId) public {
         // No lotteries currently exist
         assertEq(nftLotteries.nextLotteryId(), 1);
 
         // lottery.nftOwner will be address(0)
         vm.expectRevert(abi.encodePacked(bytes4(keccak256("Unauthorized()"))));
-        nftLotteries.cancelLottery(_lotteryId);
+        nftLotteries.cancelLottery(_fuzzLotteryId);
     }
 
     function testNonOwnerCannotCancelLottery() public {
@@ -239,7 +239,7 @@ contract NFTLotteryTest is Test {
         vm.stopPrank();
 
         hoax(nftBetter);
-        nftLotteries.placeBet{value: 1 ether}(lotteryId);
+        nftLotteries.placeBet{value: betAmount}(lotteryId);
 
         hoax(nftOwner);
         vm.expectRevert(abi.encodePacked(bytes4(keccak256("BetIsPending()"))));
@@ -273,5 +273,190 @@ contract NFTLotteryTest is Test {
         assertEq(mockNFT.ownerOf(tokenId), address(nftLotteries));
         nftLotteries.cancelLottery(lotteryId);
         assertEq(mockNFT.ownerOf(tokenId), nftOwner);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                PLACE BET
+    //////////////////////////////////////////////////////////////*/
+
+    function testFuzzInvalidIdCannotPlaceBet(uint256 _fuzzLotteryId) public {
+        // No lotteries currently exist
+        assertEq(nftLotteries.nextLotteryId(), 1);
+
+        vm.expectRevert(abi.encodePacked(bytes4(keccak256("WrongLotteryId()"))));
+        nftLotteries.placeBet(_fuzzLotteryId);
+    }
+
+    function testBetIsPendingCannotPlaceBet() public {
+        startHoax(nftOwner);
+        mockNFT.approve(address(nftLotteries), tokenId);
+
+        uint256 lotteryId = nftLotteries.listLottery(address(mockNFT), tokenId, betAmount, winProbability);
+        vm.stopPrank();
+
+        hoax(nftBetter, betAmount);
+        nftLotteries.placeBet{value: betAmount}(lotteryId);
+
+        hoax(address(1337), betAmount);
+        vm.expectRevert(abi.encodePacked(bytes4(keccak256("BetIsPending()"))));
+        nftLotteries.placeBet{value: betAmount}(lotteryId);
+    }
+
+    function testFuzzInsufficientBetAmountCannotPlaceBet(uint256 _fuzzBetAmount) public {
+        startHoax(nftOwner);
+        mockNFT.approve(address(nftLotteries), tokenId);
+        uint256 lotteryId = nftLotteries.listLottery(address(mockNFT), tokenId, betAmount, winProbability);
+        vm.stopPrank();
+
+        vm.assume(_fuzzBetAmount < betAmount);
+        hoax(nftBetter, _fuzzBetAmount);
+        vm.expectRevert(abi.encodePacked(bytes4(keccak256("InsufficientFunds()"))));
+        nftLotteries.placeBet{value: _fuzzBetAmount}(lotteryId);
+    }
+
+    function testFuzzRefundExtraETHAfterPlaceBet(uint256 _fuzzBetAmount) public {
+        startHoax(nftOwner);
+        mockNFT.approve(address(nftLotteries), tokenId);
+        uint256 lotteryId = nftLotteries.listLottery(address(mockNFT), tokenId, betAmount, winProbability);
+        vm.stopPrank();
+
+        vm.assume(_fuzzBetAmount >= betAmount);
+        hoax(nftBetter, _fuzzBetAmount);
+        nftLotteries.placeBet{value: _fuzzBetAmount}(lotteryId);
+        assertEq(nftBetter.balance, _fuzzBetAmount - betAmount);
+    }
+
+    function testBetPendingTrueAfterPlaceBet() public {
+        startHoax(nftOwner);
+        mockNFT.approve(address(nftLotteries), tokenId);
+        uint256 lotteryId = nftLotteries.listLottery(address(mockNFT), tokenId, betAmount, winProbability);
+        vm.stopPrank();
+
+        (, , , , , bool _betIsPendingBefore) = nftLotteries.openLotteries(lotteryId);
+        assertEq(_betIsPendingBefore, false);
+
+        hoax(nftBetter, betAmount);
+        nftLotteries.placeBet{value: betAmount}(lotteryId);
+
+        (, , , , , bool _betIsPendingAfter) = nftLotteries.openLotteries(lotteryId);
+        assertEq(_betIsPendingAfter, true);
+    }
+
+    function testRakeCollectedAfterPlaceBet() public {
+        nftLotteries.setRake(5 * PERCENT_MULTIPLIER);
+        deal(rakeRecipient, 0);
+
+        startHoax(nftOwner);
+        mockNFT.approve(address(nftLotteries), tokenId);
+        uint256 lotteryId = nftLotteries.listLottery(address(mockNFT), tokenId, betAmount, winProbability);
+        vm.stopPrank();
+
+        hoax(nftBetter, betAmount);
+        nftLotteries.placeBet{value: betAmount}(lotteryId);
+
+        // 5% rake on 1 ether = 0.05 ether
+        assertEq(rakeRecipient.balance, 0.05 ether);
+    }
+
+    function testFuzzRakeCollectedAfterPlaceBet(uint256 _fuzzRakePercent) public {
+        vm.assume(_fuzzRakePercent < 100 * PERCENT_MULTIPLIER);
+        nftLotteries.setRake(_fuzzRakePercent);
+        deal(rakeRecipient, 0);
+
+        startHoax(nftOwner);
+        mockNFT.approve(address(nftLotteries), tokenId);
+        uint256 lotteryId = nftLotteries.listLottery(address(mockNFT), tokenId, betAmount, winProbability);
+        vm.stopPrank();
+
+        hoax(nftBetter, betAmount);
+        nftLotteries.placeBet{value: betAmount}(lotteryId);
+
+        assertEq(rakeRecipient.balance, (betAmount * _fuzzRakePercent) / (100 * PERCENT_MULTIPLIER));
+    }
+
+    function testFuzzBetSentToNFTOwnerAfterPlaceBet(uint256 _fuzzBetAmount, uint256 _fuzzRakePercent) public {
+        vm.assume(_fuzzBetAmount > 0 && _fuzzBetAmount < 2^256);
+        vm.assume(_fuzzRakePercent < 100 * PERCENT_MULTIPLIER);
+        nftLotteries.setRake(_fuzzRakePercent);
+        deal(rakeRecipient, 0);
+
+        startHoax(nftOwner, 0);
+        mockNFT.approve(address(nftLotteries), tokenId);
+        uint256 lotteryId = nftLotteries.listLottery(address(mockNFT), tokenId, _fuzzBetAmount, winProbability);
+        vm.stopPrank();
+
+        hoax(nftBetter, _fuzzBetAmount);
+        nftLotteries.placeBet{value: _fuzzBetAmount}(lotteryId);
+
+        uint256 rakeCollected = (_fuzzBetAmount * _fuzzRakePercent) / (100 * PERCENT_MULTIPLIER);
+
+        assertEq(nftOwner.balance, _fuzzBetAmount - rakeCollected);
+        assertEq(rakeRecipient.balance, rakeCollected);
+    }
+    
+    function testFuzzSettleBetAfterPlaceBet(uint256 _fuzzWinProbability) public {
+        vm.assume(_fuzzWinProbability > 0 && _fuzzWinProbability <= 100 * PERCENT_MULTIPLIER);
+
+        startHoax(nftOwner);
+        mockNFT.approve(address(nftLotteries), tokenId);
+        uint256 lotteryId = nftLotteries.listLottery(address(mockNFT), tokenId, betAmount, _fuzzWinProbability);
+        vm.stopPrank();
+
+        vm.expectEmit(false, false, false, true);
+        emit NewBet(
+            NFTLotteries.Bet({
+                lotteryId: lotteryId,
+                user: nftBetter
+            })
+        );
+
+        hoax(nftBetter, betAmount);
+        uint256 requestId = nftLotteries.placeBet{value: betAmount}(lotteryId);
+
+        (uint256 _lotteryId, address _user) = nftLotteries.vrfRequestIdToBet(requestId);
+        assertEq(lotteryId, _lotteryId);
+        assertEq(nftBetter, _user);
+
+        // Mimic VRF mock random number
+        uint256 randomNumber = uint256(keccak256(abi.encode(requestId, 0))) % (100 * PERCENT_MULTIPLIER + 1);
+        // Mimic settling bet (reference _settleBet function)
+        bool win;
+        if (randomNumber <= _fuzzWinProbability) {
+            win = true;
+        } else {
+            win = false;
+        }
+
+        // Note: betIsPending always true because _settleBet emits outdated Lottery instance from memory to save gas
+        vm.expectEmit(true, false, false, true);
+        emit BetSettled(
+            win, 
+            NFTLotteries.Bet({
+                lotteryId: lotteryId,
+                user: nftBetter
+            }), 
+            NFTLotteries.Lottery({
+                nftOwner: nftOwner,
+                nftCollection: mockNFT,
+                tokenId: tokenId,
+                betAmount: betAmount,
+                winProbability: _fuzzWinProbability,
+                betIsPending: true
+            }) 
+        );
+
+        // Mimic fulfilling VRF randomness call -> _settleBet with mock
+        mockCoordinator.fulfillRandomWords(requestId, address(nftLotteries));
+
+        if (win) {
+            assertEq(mockNFT.ownerOf(tokenId), nftBetter);
+        } else {
+            (address _nftOwner, , , , , bool _betIsPending) = nftLotteries.openLotteries(lotteryId);
+
+            // Verify betIsPending updated after lost lottery settled
+            assertEq(false, _betIsPending);
+            assertEq(nftOwner, _nftOwner);
+            assertEq(mockNFT.ownerOf(tokenId), address(nftLotteries));
+        }
     }
 }

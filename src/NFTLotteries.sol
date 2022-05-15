@@ -99,7 +99,7 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
     uint64 public subscriptionId;
 
     /// @notice VRF callback request gas limit
-    uint32 public callbackGasLimit = 100000;
+    uint32 public callbackGasLimit = 50000;
 
     /// @notice VRF number of random values in one request
     uint32 internal numWords =  1;
@@ -160,7 +160,7 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
         // The specified bet amount to win the NFT must be greater than 0
         if (_betAmount == 0) revert BetAmountZero();
 
-        // The probability of winning must be > 0 and < 100 (because we include 0)
+        // The probability of winning must be > 0 and < 100
         if (_winProbability == 0 || _winProbability > 100 * PERCENT_MULTIPLIER) revert InvalidPercent();
 
         Lottery memory lottery = Lottery({
@@ -201,7 +201,8 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
 
     /// @notice User bets on NFT and function calls VRF for random number
     /// @param _lotteryId The Id of the lottery with NFT being bet on
-    function placeBet(uint256 _lotteryId) external payable {
+    /// @return The VRF request Id
+    function placeBet(uint256 _lotteryId) external payable returns (uint256) {
         Lottery memory lottery = openLotteries[_lotteryId];
 
         // Check if the Lottery Id is valid (win probability can't be 0)
@@ -236,9 +237,11 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
             user: msg.sender
         });
 
+        emit NewBet(bet);
+
         vrfRequestIdToBet[requestId] = bet;
 
-        emit NewBet(bet);
+        return requestId;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -386,7 +389,7 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
         // Only the original owner can change the bet amount
         if (lottery.nftOwner != msg.sender) revert Unauthorized(); 
 
-        // The probability of winning must be > 0 and < 100 (because we include 0)
+        // The probability of winning must be > 0 and < 100
         if (_winProbability == 0 || _winProbability > 100 * PERCENT_MULTIPLIER) revert InvalidPercent();
 
         lottery.winProbability = _winProbability;

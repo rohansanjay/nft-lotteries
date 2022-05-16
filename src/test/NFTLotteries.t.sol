@@ -62,6 +62,9 @@ contract NFTLotteryTest is Test {
             rake,
             rakeRecipient
         );
+        
+        // Add contract as mock consumer
+        mockCoordinator.addConsumer(subscriptionId, address(nftLotteries));
     }
 
     /*//////////////////////////////////////////////////////////////

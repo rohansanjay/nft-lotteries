@@ -2,15 +2,15 @@
 pragma solidity 0.8.12;
 
 import { ERC721 } from "solmate/tokens/ERC721.sol";
+import { Owned } from "solmate/auth/Owned.sol";
 import { IERC721TokenReceiver } from "./interfaces/IERC721TokenReceiver.sol";
 import { VRFConsumerBaseV2 } from "chainlink/v0.8/VRFConsumerBaseV2.sol";
 import { VRFCoordinatorV2Interface } from "chainlink/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
-import { Ownable } from "oz/access/Ownable.sol";
 
 /// @title NFT Lotteries
 /// @author Rohan Sanjay (https://github.com/rohansanjay/nft-lotteries)
 /// @notice An NFT Betting Protocol
-contract NFTLotteries is VRFConsumerBaseV2, Ownable {
+contract NFTLotteries is Owned, VRFConsumerBaseV2 {
 
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
@@ -126,7 +126,7 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
         bytes32 _keyHash,
         uint256 _rake,
         address _rakeRecipient
-    ) VRFConsumerBaseV2(_vrfCoordinator) {
+    ) Owned (msg.sender) VRFConsumerBaseV2(_vrfCoordinator) {
         if (_vrfCoordinator == address(0)) revert InvalidAddress();
         if (_rake > 100 * PERCENT_MULTIPLIER) revert InvalidPercent();
         if (_rakeRecipient == address(0)) revert InvalidAddress();
@@ -318,33 +318,38 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Sets VRF key hash
+    /// @dev Only owner
     /// @param _keyHash the new key hash
     function setKeyHash(bytes32 _keyHash) external onlyOwner {
         keyHash = _keyHash;
     }
 
     /// @notice Sets VRF subscription Id
+    /// @dev Only owner
     /// @param _subscriptionId the new subscription Id
     function setSubscriptionId(uint64 _subscriptionId) external onlyOwner {
         subscriptionId = _subscriptionId;
     }
 
     /// @notice Sets VRF callback gas limit
+    /// @dev Only owner
     /// @param _callbackGasLimit the new callback gas limit
     function setCallbackGasLimit(uint32 _callbackGasLimit) external onlyOwner {
         callbackGasLimit = _callbackGasLimit;
     }
 
     /// @notice Sets VRF number of confirmations
+    /// @dev Only owner
     /// @param _requestConfirmations the new number of request confirmations
     function setRequestConfirmations(uint16 _requestConfirmations) external onlyOwner {
         requestConfirmations = _requestConfirmations;
     }
 
     /// @notice Sets the rake fee
+    /// @dev Only owner
     /// @param _rake New rake fee (6 decimals ex: 10 * 10 ** 6 = 10%)
     function setRake(uint256 _rake) external onlyOwner {
-        if (rake > 100 * PERCENT_MULTIPLIER) revert InvalidPercent();
+        if (_rake > 100 * PERCENT_MULTIPLIER) revert InvalidPercent();
 
         emit RakeSet(rake, _rake);
 
@@ -352,9 +357,12 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
     }
 
     /// @notice Sets the rake fee recipient
+    /// @dev Only owner
     /// @param _rakeRecipient Address of new rake fee recipient
     function setRakeRecipient(address _rakeRecipient) external onlyOwner {
-        if (_rakeRecipient == address(0) || _rakeRecipient == rakeRecipient) revert InvalidAddress();
+        if (_rakeRecipient == address(0) || _rakeRecipient == address(rakeRecipient)) revert InvalidAddress();
+
+        if (_rakeRecipient == rakeRecipient) revert InvalidAddress();
 
         rakeRecipient = _rakeRecipient;
     }
@@ -362,6 +370,9 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
     /// @notice Sets a new bet amount for a lottery
     /// @param _betAmount New bet amount
     function setBetAmount(uint256 _lotteryId, uint256 _betAmount) external {
+        // The specified bet amount to win the NFT must be greater than 0
+        if (_betAmount == 0) revert BetAmountZero();
+
         Lottery memory lottery = openLotteries[_lotteryId];
 
         // Cannot change bet amount if there is already a bet pending
@@ -369,9 +380,6 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
 
         // Only the original owner can change the bet amount
         if (lottery.nftOwner != msg.sender) revert Unauthorized(); 
-
-        // The specified bet amount to win the NFT must be greater than 0
-        if (_betAmount == 0) revert BetAmountZero();
 
         lottery.betAmount = _betAmount;
 
@@ -381,6 +389,9 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
     /// @notice Sets a new win probability a lottery
     /// @param _winProbability New win probability
     function setWinProbability(uint256 _lotteryId, uint256 _winProbability) external {
+        // The probability of winning must be > 0 and < 100
+        if (_winProbability == 0 || _winProbability > 100 * PERCENT_MULTIPLIER) revert InvalidPercent();
+
         Lottery memory lottery = openLotteries[_lotteryId];
 
         // Cannot change win probability if there is already a bet pending
@@ -388,9 +399,6 @@ contract NFTLotteries is VRFConsumerBaseV2, Ownable {
 
         // Only the original owner can change the bet amount
         if (lottery.nftOwner != msg.sender) revert Unauthorized(); 
-
-        // The probability of winning must be > 0 and < 100
-        if (_winProbability == 0 || _winProbability > 100 * PERCENT_MULTIPLIER) revert InvalidPercent();
 
         lottery.winProbability = _winProbability;
 

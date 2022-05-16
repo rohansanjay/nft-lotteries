@@ -28,10 +28,9 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 
 ## To-do
 **Contracts (Rohan)**
-- Setter tests
 - Upgradable?
 - Finish README 
-- Set VRF gas callback
+- Tune VRF gas callback
 
 **Gas Snapshot (Rohan)**
 - Store active lottery Ids
@@ -45,6 +44,7 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 **Security**
 - Check msg.value overflow?
 - Check VRF random bound
+- Gas callback when gas is high?
 
 ## Development
 

@@ -13,11 +13,9 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 
 ## Blueprint
 ```bash
-.
 ├── lib
 │   ├── chainlink
 │   ├── forge-std
-│   ├── openzeppelin-contracts
 │   └── solmate
 ├── scripts
 └── src
@@ -27,12 +25,8 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 ```
 
 ## To-do
-**Contracts (Rohan)**
-- Upgradable?
-- Finish README 
-- Tune VRF gas callback
 
-**Gas Snapshot (Rohan)**
+**Gas Comparisons (Rohan)**
 - Store active lottery Ids
 - Store mapping of nft collection to lotteryId
 
@@ -44,7 +38,10 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 **Security**
 - Check msg.value overflow?
 - Check VRF random bound
+- Tune VRF gas callback
 - Gas callback when gas is high?
+- Which License
+- Upgradable?
 
 ## Development
 
@@ -52,23 +49,29 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 ```bash
 git clone https://github.com/rohansanjay/nft-lotteries.git
 cd nft-lotteries
-make install
+forge install
 ```
 
 **Building**
 ```bash
-make build
+forge build
 ```
 
 **Testing**
 ```bash
-make test
+forge test
 ```
 ## License
 
 [AGPL-3.0-only](https://github.com/rohansanjay/nft-lotteries/blob/master/LICENSE)
 
 ## Acknowledgements
+
+- [Martingale Shares](https://www.paradigm.xyz/2021/09/martingale-shares)
+- [solmate](https://github.com/Rari-Capital/solmate)
+- [n3rp](https://github.com/GrantStenger/n3rp)
+- [lil-web3](https://github.com/m1guelpf/lil-web3)
+- [MultiRaffle](https://github.com/Anish-Agnihotri/MultiRaffle)
 
 ## Disclaimer
 

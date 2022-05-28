@@ -36,6 +36,7 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 - Mainnet design (Enzo)
 
 **Security**
+- What is VRF request fails?
 - Check msg.value overflow?
 - Check VRF random bound
 - Tune VRF gas callback

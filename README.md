@@ -5,11 +5,10 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 
 ## Mechanism
 
-1. An NFT owner deposits their NFT into the smart contract and specifies the required bet amount and percentage chance of winning their NFT. For example, Alice deposits their Milday and lists a 1 ETH bet amount for a 20% chance to win it (which implies it is worth 5 ETH).
-2. Bob wants to take Alice up on these Lottery terms for the Milady and pays the 1 ETH bet amount. The 1 ETH is sent to Alice.
-3. The smart contract uses random number generation to simulate the Lottery giving Bob a 20% chance of winning. If Bob wins, they get the NFT (essentially having purchased it for 1 ETH). Otherwise, Alice keeps the NFT and locks in a 1 ETH gain from Bob's bet.
-4. Alice can come back and withdraw their Milady at any time as long as nobody won the Lottery while it was listed.
-5. The protocol continues to list all open NFT Lotteries and allows users to bet on them.
+1. An NFT owner deposits their NFT into the smart contract and specifies the required bet amount and percentage chance of winning it. For example, Alice deposits their Bored Ape and lists a 1 ETH bet amount for a 20% chance to win it (which implies it is worth 5 ETH).
+2. Bob wants to take Alice up on these Lottery terms for the Bored Ape and pays the 1 ETH bet amount. The 1 ETH is sent to Alice.
+3. The smart contract uses random number generation to simulate the Lottery giving Bob a 20% chance of winning. If Bob wins, they get the NFT (essentially having purchased it for 1 ETH). Otherwise, Alice keeps the NFT in addition to a 1 ETH gain from Bob's bet.
+4. Alice can come back and withdraw their Bored Ape at any time as long as nobody won the Lottery while it was listed and there's no pending bet.
 
 ## Blueprint
 ```bash
@@ -26,23 +25,13 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 
 ## To-do
 
-**Gas Comparisons (Rohan)**
-- Store active lottery Ids
-- Store mapping of nft collection to lotteryId
-
 **Frontend**
-- Simple fe for testnet (Roland)
-- EV calculator (Roland)
-- Mainnet design (Enzo)
+- Design based on barebones impl and spec
 
 **Security**
-- What is VRF request fails?
-- Check msg.value overflow?
-- Check VRF random bound
+- Handle VRF request failure
+- Confirm VRF random bound
 - Tune VRF gas callback
-- Gas callback when gas is high?
-- Which License
-- Upgradable?
 
 ## Development
 
@@ -64,7 +53,7 @@ forge test
 ```
 ## License
 
-[AGPL-3.0-only](https://github.com/rohansanjay/nft-lotteries/blob/master/LICENSE)
+[AGPL-3.0-only](https://github.com/rohansanjay/nft-lotteries/blob/main/LICENSE)
 
 ## Acknowledgements
 

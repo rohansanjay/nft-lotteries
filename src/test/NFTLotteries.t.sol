@@ -562,6 +562,36 @@ contract NFTLotteryTest is Test {
         assertEq(nftLotteries.rakeRecipient(), address(42));
     }
 
+    function testNonOwnerCannotSetPendingBetStatusToFalse() public {
+        startHoax(nftOwner);
+        mockNFT.approve(address(nftLotteries), tokenId);
+        uint256 lotteryId = nftLotteries.listLottery(address(mockNFT), tokenId, betAmount, winProbability);
+        vm.stopPrank();
+
+        hoax(address(1337));
+        vm.expectRevert("UNAUTHORIZED");
+        nftLotteries.setPendingBetStatusToFalse(lotteryId);
+    }
+
+    function testCanSetPendingBetStatusToFalse() public {
+        startHoax(nftOwner);
+        mockNFT.approve(address(nftLotteries), tokenId);
+        uint256 lotteryId = nftLotteries.listLottery(address(mockNFT), tokenId, betAmount, winProbability);
+        vm.stopPrank();
+
+        hoax(nftBetter);
+        nftLotteries.placeBet{value: betAmount}(lotteryId);
+
+        (, , , , , bool _betIsPendingBefore) = nftLotteries.openLotteries(lotteryId);
+        assertEq(true, _betIsPendingBefore);
+
+        hoax(OWNER);
+        nftLotteries.setPendingBetStatusToFalse(lotteryId);
+
+        (, , , , , bool _betIsPendingAfter) = nftLotteries.openLotteries(lotteryId);
+        assertEq(false, _betIsPendingAfter);
+    }
+
     function testCannotSetZeroBetAmountSetBetAmount() public {
         startHoax(nftOwner);
         mockNFT.approve(address(nftLotteries), tokenId);

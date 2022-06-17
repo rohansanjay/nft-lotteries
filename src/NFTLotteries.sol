@@ -367,7 +367,15 @@ contract NFTLotteries is Owned, VRFConsumerBaseV2 {
         rakeRecipient = _rakeRecipient;
     }
 
+    /// @notice Sets the pending bet status to false for a lottery
+    /// @dev Only owner (to unlock NFTs incase VRF reverts)
+    /// @param _lotteryId The Id of the lottery
+    function setPendingBetStatusToFalse(uint256 _lotteryId) external onlyOwner {
+        _flipBetIsPendingStatus(_lotteryId, true);
+    }
+
     /// @notice Sets a new bet amount for a lottery
+    /// @param _lotteryId The Id of the lottery
     /// @param _betAmount New bet amount
     function setBetAmount(uint256 _lotteryId, uint256 _betAmount) external {
         // The specified bet amount to win the NFT must be greater than 0
@@ -387,6 +395,7 @@ contract NFTLotteries is Owned, VRFConsumerBaseV2 {
     }
 
     /// @notice Sets a new win probability a lottery
+    /// @param _lotteryId The Id of the lottery
     /// @param _winProbability New win probability
     function setWinProbability(uint256 _lotteryId, uint256 _winProbability) external {
         // The probability of winning must be > 0 and < 100

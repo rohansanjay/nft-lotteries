@@ -518,7 +518,7 @@ contract NFTLotteryTest is Test {
         assertEq(nftLotteries.requestConfirmations(), uint16(69));
     }
 
-    function testNonOnwerCannotSetRake() public {
+    function testNonOwnerCannotSetRake() public {
         hoax(address(1337));
         vm.expectRevert("UNAUTHORIZED");
         nftLotteries.setRake(0);

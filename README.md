@@ -31,6 +31,7 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 **Security**
 - Confirm VRF random bound
 - Tune VRF gas callback
+- Which license?
 
 ## Development
 

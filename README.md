@@ -29,7 +29,6 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 - Design based on barebones impl and spec
 
 **Security**
-- Handle VRF request failure
 - Confirm VRF random bound
 - Tune VRF gas callback
 
@@ -51,6 +50,12 @@ forge build
 ```bash
 forge test
 ```
+
+**Updating Gas Snapshots**
+```bash
+forge snapshot
+```
+
 ## License
 
 [AGPL-3.0-only](https://github.com/rohansanjay/nft-lotteries/blob/main/LICENSE)

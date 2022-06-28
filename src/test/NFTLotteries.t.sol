@@ -476,7 +476,7 @@ contract NFTLotteryTest is Test {
         nftLotteries.setKeyHash(bytes32("test"));
     }
 
-    function testCanSetKeyHash() public {
+    function testOwnerCanSetKeyHash() public {
         hoax(OWNER);
         nftLotteries.setKeyHash(bytes32("test"));
         assertEq(nftLotteries.keyHash(), bytes32("test"));
@@ -488,7 +488,7 @@ contract NFTLotteryTest is Test {
         nftLotteries.setSubscriptionId(uint64(69));
     }
 
-    function testCanSetSubscriptionId() public {
+    function testOwnerCanSetSubscriptionId() public {
         hoax(OWNER);
         nftLotteries.setSubscriptionId(uint64(69));
         assertEq(nftLotteries.subscriptionId(), uint64(69));
@@ -500,7 +500,7 @@ contract NFTLotteryTest is Test {
         nftLotteries.setCallbackGasLimit(uint32(69));
     }
 
-    function testCanSetCallbackGasLimit() public {
+    function testOwnerCanSetCallbackGasLimit() public {
         hoax(OWNER);
         nftLotteries.setCallbackGasLimit(uint32(69));
         assertEq(nftLotteries.callbackGasLimit(), uint32(69));
@@ -512,13 +512,13 @@ contract NFTLotteryTest is Test {
         nftLotteries.setRequestConfirmations(uint16(69));
     }
 
-    function testCanSetRequestConfirmations() public {
+    function testOwnerCanSetRequestConfirmations() public {
         hoax(OWNER);
         nftLotteries.setRequestConfirmations(uint16(69));
         assertEq(nftLotteries.requestConfirmations(), uint16(69));
     }
 
-    function testNonOnwerCannotSetRake() public {
+    function testNonOwnerCannotSetRake() public {
         hoax(address(1337));
         vm.expectRevert("UNAUTHORIZED");
         nftLotteries.setRake(0);
@@ -531,7 +531,7 @@ contract NFTLotteryTest is Test {
         nftLotteries.setRake(_fuzzRake);
     }
 
-    function testFuzzCanSetRake(uint256 _fuzzRake) public {
+    function testFuzzOwnerCanSetRake(uint256 _fuzzRake) public {
         vm.assume(_fuzzRake < 100 * PERCENT_MULTIPLIER);
         hoax(OWNER);
         nftLotteries.setRake(_fuzzRake);
@@ -556,10 +556,43 @@ contract NFTLotteryTest is Test {
         nftLotteries.setRakeRecipient(rakeRecipient);
     }
 
-    function testCanSetRakeRecipient() public {
+    function testOwnerCanSetRakeRecipient() public {
         hoax(OWNER);
         nftLotteries.setRakeRecipient(address(42));
         assertEq(nftLotteries.rakeRecipient(), address(42));
+    }
+
+    function testNonOwnerCannotSetPendingBetStatusToFalse() public {
+        startHoax(nftOwner);
+        mockNFT.approve(address(nftLotteries), tokenId);
+        uint256 lotteryId = nftLotteries.listLottery(address(mockNFT), tokenId, betAmount, winProbability);
+        vm.stopPrank();
+
+        hoax(nftBetter);
+        nftLotteries.placeBet{value: betAmount}(lotteryId);
+
+        hoax(address(1337));
+        vm.expectRevert("UNAUTHORIZED");
+        nftLotteries.setPendingBetStatusToFalse(lotteryId);
+    }
+
+    function testOwnerCanSetPendingBetStatusToFalse() public {
+        startHoax(nftOwner);
+        mockNFT.approve(address(nftLotteries), tokenId);
+        uint256 lotteryId = nftLotteries.listLottery(address(mockNFT), tokenId, betAmount, winProbability);
+        vm.stopPrank();
+
+        hoax(nftBetter);
+        nftLotteries.placeBet{value: betAmount}(lotteryId);
+
+        (, , , , , bool _betIsPendingBefore) = nftLotteries.openLotteries(lotteryId);
+        assertEq(true, _betIsPendingBefore);
+
+        hoax(OWNER);
+        nftLotteries.setPendingBetStatusToFalse(lotteryId);
+
+        (, , , , , bool _betIsPendingAfter) = nftLotteries.openLotteries(lotteryId);
+        assertEq(false, _betIsPendingAfter);
     }
 
     function testCannotSetZeroBetAmountSetBetAmount() public {

@@ -33,8 +33,6 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 - Tune VRF gas callback
 - Which license?
 
-## Development
-
 **Set Up**
 ```bash
 git clone https://github.com/rohansanjay/nft-lotteries.git
@@ -55,6 +53,20 @@ forge test
 **Updating Gas Snapshots**
 ```bash
 forge snapshot
+```
+
+**Deploying**
+```bash
+source .env
+
+forge script \
+    script/Deploy.sol:Deploy \
+    --rpc-url $RINKEBY_RPC_URL \
+    --private-key $PRIVATE_KEY \
+    --sig "run(uint64 _subscriptionId, address _vrfCoordinator, bytes32 _keyHash,uint256 _rake,address _rakeRecipient)" \
+    $RINKEBY_SUB_ID $RINKEBY_VRF_COOR $RINKEBY_KEY_HASH $RINKEBY_RAKE $RINKEBY_RAKE_REC \
+    --broadcast -vvv \
+    --verify --etherscan-api-key $ETHERSCAN_API_KEY
 ```
 
 ## License

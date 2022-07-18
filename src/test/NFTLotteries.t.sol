@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.12;
+pragma solidity 0.8.14;
 
 import { NFTLotteries } from "../NFTLotteries.sol";
 import { MockERC721 } from "solmate/test/utils/mocks/MockERC721.sol";

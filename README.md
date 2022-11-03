@@ -36,31 +36,31 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 
 **Set Up**
 ```bash
-git clone https://github.com/rohansanjay/nft-lotteries.git
-cd nft-lotteries
-forge install
+$ git clone https://github.com/rohansanjay/nft-lotteries.git
+$ cd nft-lotteries
+$ forge install
 ```
 
 **Building**
 ```bash
-forge build
+$ forge build
 ```
 
 **Testing**
 ```bash
-forge test
+$ forge test
 ```
 
 **Updating Gas Snapshots**
 ```bash
-forge snapshot
+$ forge snapshot
 ```
 
 **Deploying**
 ```bash
-source .env
+$ source .env
 
-forge script script/Deploy.g.sol:Deploy --rpc-url $GOERLI_RPC_URL --broadcast --verify -vvvv
+$ forge script script/Deploy.g.sol:Deploy --rpc-url $GOERLI_RPC_URL --broadcast --verify -vvvv
 ```
 
 ## License

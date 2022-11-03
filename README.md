@@ -1,7 +1,7 @@
 # nft-lotteries • [![tests](https://github.com/rohansanjay/nft-lotteries/actions/workflows/tests.yml/badge.svg)](https://github.com/rohansanjay/nft-lotteries/actions/workflows/tests.yml)
 
 ## Introduction
-NFT Lotteries are an implementation of Lottery Fractionalization discussed in [Dave White's](https://twitter.com/_Dave__White_) paper on [Martingale Shares](https://www.paradigm.xyz/2021/09/martingale-shares). The protocol allows users to place an $X bet for a Y% chance at winning an NFT. NFT owners specify the required bet amount and probability a user has of winning their NFT, taking on the risk of losing it for the gains pocketed from each bet. Gamble your NFTs, anon.
+NFT Lotteries are an implementation of Lottery Fractionalization discussed in [Dave White's](https://twitter.com/_Dave__White_) paper on [Martingale Shares](https://www.paradigm.xyz/2021/09/martingale-shares). The protocol allows users to place an $X bet for a Y% chance at winning an NFT. NFT owners specify the required bet amount and probability a user has of winning their NFT, taking on the risk of losing it for the gains pocketed from each bet. Gamble your NFTs!
 
 ## Mechanism
 
@@ -32,6 +32,7 @@ NFT Lotteries are an implementation of Lottery Fractionalization discussed in [D
 - Confirm VRF random bound
 - Tune VRF gas callback
 - Which license?
+## Development
 
 **Set Up**
 ```bash
@@ -59,14 +60,7 @@ forge snapshot
 ```bash
 source .env
 
-forge script \
-    script/Deploy.sol:Deploy \
-    --rpc-url $RINKEBY_RPC_URL \
-    --private-key $PRIVATE_KEY \
-    --sig "run(uint64 _subscriptionId, address _vrfCoordinator, bytes32 _keyHash,uint256 _rake,address _rakeRecipient)" \
-    $RINKEBY_SUB_ID $RINKEBY_VRF_COOR $RINKEBY_KEY_HASH $RINKEBY_RAKE $RINKEBY_RAKE_REC \
-    --broadcast -vvv \
-    --verify --etherscan-api-key $ETHERSCAN_API_KEY
+forge script script/Deploy.g.sol:Deploy --rpc-url $GOERLI_RPC_URL --broadcast --verify -vvvv
 ```
 
 ## License
